@@ -1,0 +1,46 @@
+flowchart LR
+  Customer([Customer])
+  Agent([Agent])
+  Admin([Admin])
+  Support([Support])
+  Biller([Biller system])
+  subgraph PayLink
+    UC1(Register)
+    UC2(View balance and history)
+    UC3(Top up wallet)
+    UC4(List billers and fields)
+    UC5(Bill inquiry)
+    UC6(Pay a bill)
+    UC7(Request refund)
+    UC8(Manage billers and services)
+    UC9(Edit fees and limits)
+    UC10(Upgrade verification)
+    UC11(View daily totals)
+    UC12(Search payment by reference)
+    UC13(Block or unblock account)
+    UC14(Approve refund)
+    UC15(Review reconciliation report)
+    UC16(Pay on behalf of customer)
+    UC17(Cash top up for customer)
+    UC18(Send settlement file and callbacks)
+  end
+  Customer --- UC1
+  Customer --- UC2
+  Customer --- UC3
+  Customer --- UC4
+  Customer --- UC5
+  Customer --- UC6
+  Customer --- UC7
+  Agent --- UC16
+  Agent --- UC17
+  Admin --- UC8
+  Admin --- UC9
+  Admin --- UC10
+  Admin --- UC11
+  Support --- UC12
+  Support --- UC13
+  Support --- UC14
+  Support --- UC15
+  Biller --- UC18
+  UC6 -. includes .-> UC5
+  UC16 -. extends .-> UC6

@@ -1,0 +1,137 @@
+classDiagram
+  class Account {
+    +UUID id
+    +String phone
+    +Role role
+    +VerificationLevel level
+    +Boolean blocked
+    +Date blockedUntil
+  }
+  class Wallet {
+    +UUID id
+    +UUID accountId
+    +availableBalance() Money
+    +heldBalance() Money
+  }
+  class LedgerEntry {
+    +UUID id
+    +UUID walletId
+    +EntryType type
+    +Money availableDelta
+    +Money heldDelta
+    +UUID paymentId
+    +Date createdAt
+  }
+  class Money {
+    +Decimal value
+    +String currency
+    +add(Money) Money
+    +subtract(Money) Money
+  }
+  class Biller {
+    +UUID id
+    +String code
+    +Boolean active
+    +Money minAmount
+    +Money maxAmount
+  }
+  class BillerService {
+    +UUID id
+    +String name
+    +String[] requiredFields
+  }
+  class Payment {
+    +UUID id
+    +String idempotencyKey
+    +Money amount
+    +Money fee
+    +PaymentState state
+    +String billerReference
+    +transitionTo(PaymentState)
+  }
+  class PaymentState {
+    <<interface>>
+    +onFundsHeld()
+    +onSent()
+    +onBillerConfirmed()
+    +onBillerRefused()
+    +onTimeout()
+  }
+  class BillerAdapter {
+    <<interface>>
+    +inquire(request) BillInfo
+    +pay(request) PayResult
+    +query(reference) PayResult
+  }
+  class ElectroCoAdapter
+  class AquaCoAdapter
+  class TopUpNetAdapter
+  class BillerAdapterFactory {
+    +forBiller(code) BillerAdapter
+  }
+  class FeeStrategy {
+    <<interface>>
+    +calculate(amount) Money
+  }
+  class FixedFee
+  class PercentageFee
+  class TieredFee
+  class PromotionFee
+  class FraudRule {
+    <<interface>>
+    +check(ctx) Result
+    +setNext(FraudRule)
+  }
+  class DailyLimitRule
+  class VelocityRule
+  class BlockedAccountRule
+  class Notification {
+    +UUID id
+    +Channel channel
+    +Status status
+    +int attempts
+  }
+  class NotificationObserver {
+    <<interface>>
+    +onPaymentEvent(event)
+  }
+  class SettlementRecord {
+    +String billerReference
+    +Money amount
+  }
+  class ReconciliationReport {
+    +Date day
+    +Difference[] differences
+  }
+  class AuditRecord {
+    +UUID id
+    +String actor
+    +String action
+    +String reason
+    +Date at
+  }
+  Account "1" --> "1" Wallet
+  Wallet "1" --> "*" LedgerEntry
+  LedgerEntry --> Money
+  Biller "1" --> "*" BillerService
+  Payment --> Wallet
+  Payment --> Biller
+  Payment --> PaymentState
+  Payment "1" --> "*" LedgerEntry
+  BillerAdapter <|.. ElectroCoAdapter
+  BillerAdapter <|.. AquaCoAdapter
+  BillerAdapter <|.. TopUpNetAdapter
+  BillerAdapterFactory ..> BillerAdapter
+  FeeStrategy <|.. FixedFee
+  FeeStrategy <|.. PercentageFee
+  FeeStrategy <|.. TieredFee
+  FeeStrategy <|.. PromotionFee
+  FraudRule <|.. DailyLimitRule
+  FraudRule <|.. VelocityRule
+  FraudRule <|.. BlockedAccountRule
+  NotificationObserver ..> Notification
+  Payment ..> NotificationObserver
+  Payment ..> FeeStrategy
+  ReconciliationReport --> SettlementRecord
+  ReconciliationReport ..> Payment
+  Payment ..> AuditRecord

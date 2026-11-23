@@ -1,0 +1,21 @@
+sequenceDiagram
+  participant B as Biller
+  participant BI as Biller Adapter
+  participant PP as Payment Processing
+  participant SM as Payment State Machine
+  participant W as Wallet and Ledger
+  participant AU as Audit Log
+  participant N as Notifications
+  actor C as Customer
+  B-->>BI: refuses payment (error code)
+  BI->>PP: PayResult failed with mapped reason
+  PP->>SM: apply event BillerRefused
+  SM-->>PP: SentToBiller to Failed allowed
+  PP->>W: release hold (ledger entry: hold release)
+  W-->>PP: available balance restored
+  PP->>SM: apply event HoldReleased
+  SM-->>PP: Failed to Refunded
+  PP->>AU: record who, when, why
+  PP-->>N: PaymentFailed event with reason
+  N->>C: SMS with clear reason
+  Note over PP,W: Unknown payments are refunded only after reconciliation proves the biller never received them

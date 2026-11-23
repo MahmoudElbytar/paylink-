@@ -1,0 +1,54 @@
+sequenceDiagram
+  actor C as Customer
+  participant API as Payment API
+  participant PP as Payment Processing
+  participant FE as Fees
+  participant FR as Fraud Chain
+  participant W as Wallet and Ledger
+  participant BI as Biller Adapter
+  participant B as Biller
+  participant N as Notifications
+  C->>API: POST /payments (Idempotency-Key, biller, fields, amount)
+  API->>PP: createPayment
+  PP->>PP: lookup idempotency key
+  alt key already used
+    PP-->>API: original result
+    API-->>C: 200 original payment
+  else new key
+    PP->>BI: inquire(fields)
+    BI->>B: bill inquiry
+    B-->>BI: amount due
+    BI-->>PP: BillInfo
+    PP->>FE: calculate fee
+    FE-->>PP: fee and total
+    PP->>FR: run rules (limit, velocity, blocked)
+    alt a rule fails
+      FR-->>PP: rejected with reason
+      PP-->>C: Rejected state, clear reason
+    else rules pass
+      PP->>W: hold total (atomic, row lock)
+      alt insufficient funds
+        W-->>PP: insufficient
+        PP-->>C: Rejected state
+      else held
+        W-->>PP: FundsHeld
+        PP->>BI: pay(reference)
+        BI->>B: payment request
+        alt confirmed
+          B-->>BI: paid
+          BI-->>PP: success
+          PP->>W: convert hold to charge, credit fee income, agent commission
+          PP-->>N: PaymentCompleted event
+          N-->>C: SMS and push
+        else refused
+          B-->>BI: refused with code
+          PP->>W: release hold
+          PP-->>N: PaymentFailed event
+          N-->>C: SMS with reason
+        else timeout after 10 s
+          PP->>PP: state Unknown, schedule re-queries
+          PP-->>C: being processed
+        end
+      end
+    end
+  end

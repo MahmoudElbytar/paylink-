@@ -1,0 +1,130 @@
+erDiagram
+  ACCOUNT ||--|| WALLET : owns
+  WALLET ||--o{ LEDGER_ENTRY : records
+  ACCOUNT ||--o{ PAYMENT : makes
+  ACCOUNT ||--o{ PAYMENT : acts_as_agent_for
+  BILLER ||--o{ BILLER_SERVICE : offers
+  BILLER_SERVICE ||--o{ PAYMENT : paid_through
+  PAYMENT ||--o{ PAYMENT_EVENT : has_history
+  PAYMENT ||--o{ LEDGER_ENTRY : causes
+  PAYMENT ||--o{ NOTIFICATION : triggers
+  PAYMENT ||--o{ RETRY_JOB : schedules
+  PAYMENT ||--o{ REFUND_REQUEST : may_have
+  BILLER ||--o{ SETTLEMENT_FILE : sends
+  SETTLEMENT_FILE ||--o{ SETTLEMENT_LINE : contains
+  RECONCILIATION_REPORT ||--o{ RECONCILIATION_DIFF : lists
+  SETTLEMENT_FILE ||--o| RECONCILIATION_REPORT : produces
+  PAYMENT ||--o{ RECONCILIATION_DIFF : flagged_in
+  ACCOUNT ||--o{ AUDIT_LOG : acts_in
+  CONFIG_RULE
+  ACCOUNT {
+    uuid id PK
+    string phone UK
+    string password_hash
+    string role
+    string verification_level
+    boolean blocked
+    timestamp blocked_until
+  }
+  WALLET {
+    uuid id PK
+    uuid account_id FK
+    string currency
+  }
+  LEDGER_ENTRY {
+    uuid id PK
+    uuid wallet_id FK
+    uuid payment_id FK
+    string entry_type
+    bigint available_delta_piasters
+    bigint held_delta_piasters
+    timestamp created_at
+  }
+  BILLER {
+    uuid id PK
+    string code UK
+    string name
+    boolean active
+    bigint min_amount_piasters
+    bigint max_amount_piasters
+  }
+  BILLER_SERVICE {
+    uuid id PK
+    uuid biller_id FK
+    string name
+    json required_fields
+  }
+  PAYMENT {
+    uuid id PK
+    string reference UK
+    string idempotency_key UK
+    uuid account_id FK
+    uuid agent_id FK
+    uuid service_id FK
+    bigint amount_piasters
+    bigint fee_piasters
+    string state
+    string biller_reference
+    timestamp created_at
+  }
+  PAYMENT_EVENT {
+    uuid id PK
+    uuid payment_id FK
+    string from_state
+    string to_state
+    string reason
+    timestamp at
+  }
+  NOTIFICATION {
+    uuid id PK
+    uuid payment_id FK
+    string channel
+    string status
+    int attempts
+  }
+  RETRY_JOB {
+    uuid id PK
+    uuid payment_id FK
+    timestamp run_at
+    int attempt
+    string status
+  }
+  REFUND_REQUEST {
+    uuid id PK
+    uuid payment_id FK
+    string status
+    uuid approved_by
+  }
+  SETTLEMENT_FILE {
+    uuid id PK
+    uuid biller_id FK
+    date business_date
+  }
+  SETTLEMENT_LINE {
+    uuid id PK
+    uuid file_id FK
+    string biller_reference
+    bigint amount_piasters
+  }
+  RECONCILIATION_REPORT {
+    uuid id PK
+    uuid file_id FK
+    timestamp generated_at
+  }
+  RECONCILIATION_DIFF {
+    uuid id PK
+    uuid report_id FK
+    uuid payment_id FK
+    string kind
+  }
+  AUDIT_LOG {
+    uuid id PK
+    uuid actor_id FK
+    string action
+    string reason
+    timestamp at
+  }
+  CONFIG_RULE {
+    string key PK
+    string value
+  }

@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Build
+        run: npm run build
+      - name: Test with coverage (fails under 70% lines)
+        run: npm run test:cov
+      - name: Coverage summary
+        if: always()
+        run: |
+          echo "### Coverage" >> "$GITHUB_STEP_SUMMARY"
+          node -e "const s=require('./coverage/coverage-summary.json').total;console.log('lines: '+s.lines.pct+'%  branches: '+s.branches.pct+'%')" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage
+          path: coverage/
+
+  docker:
+    needs: build-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t paylink:${{ github.sha }} .
+      - name: Start stack and health check
+        run: |
+          docker compose up -d --build
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3000/health | grep -q '"db":"up"'; then echo healthy; exit 0; fi
+            sleep 3
+          done
+          docker compose logs
+          exit 1
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
