@@ -1,15 +1,37 @@
 {
+  // TypeScript compiler configuration
   "compilerOptions": {
+    // Use CommonJS module system
     "module": "commonjs",
+
+    // Compile JavaScript using the ES2022 standard
     "target": "ES2022",
+
+    // Output compiled files into the dist folder
     "outDir": "./dist",
+
+    // Set the root directory for source files
     "rootDir": "./",
+
+    // Enable strict type-checking rules
     "strict": true,
+
+    // Allow compatibility between CommonJS and ES modules
     "esModuleInterop": true,
+
+    // Enable TypeScript decorators
     "experimentalDecorators": true,
+
+    // Generate metadata for decorated declarations
     "emitDecoratorMetadata": true,
+
+    // Skip type-checking of declaration files
     "skipLibCheck": true,
+
+    // Generate source map files for debugging
     "sourceMap": true
   },
+
+  // Include source code and test files in compilation
   "include": ["src/**/*", "test/**/*"]
 }
