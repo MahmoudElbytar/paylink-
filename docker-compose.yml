@@ -1,35 +1,58 @@
+# Define the application services
 services:
+
+  # PostgreSQL database service
   db:
+    # Use PostgreSQL version 16 with Alpine Linux
     image: postgres:16-alpine
+
+    # Configure database credentials and database name
     environment:
       POSTGRES_USER: paylink
       POSTGRES_PASSWORD: paylink
       POSTGRES_DB: paylink
+
+    # Persist database data and load migrations on first initialization
     volumes:
       - pgdata:/var/lib/postgresql/data
-      # migrations in the repo run automatically on first start
+
+      # Automatically run database migration scripts on first startup
       - ./db/migrations:/docker-entrypoint-initdb.d:ro
+
+    # Check whether the database is ready to accept connections
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U paylink -d paylink"]
       interval: 5s
       timeout: 3s
       retries: 10
 
+  # PayLink application service
   app:
+    # Build the application using the Dockerfile
     build: .
+
+    # Configure database connection and application port
     environment:
       DATABASE_URL: postgres://paylink:paylink@db:5432/paylink
       PORT: "3000"
+
+    # Expose application port to the host machine
     ports:
       - "3000:3000"
+
+    # Wait until the database becomes healthy before starting the app
     depends_on:
       db:
         condition: service_healthy
+
+    # Check whether the application health endpoint is responding
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
       interval: 5s
       timeout: 3s
       retries: 10
 
+# Define persistent Docker volumes
 volumes:
+  # Store PostgreSQL database files permanently
   pgdata:
