@@ -27,3 +27,7 @@ npm run lint && npm run test:cov && npm run build
 ## Stack
 
 Node.js 22, NestJS 10, TypeScript, PostgreSQL 16, Jest, ESLint, Docker Compose, GitHub Actions.
+
+## Team
+
+Add your names and roles here.
