@@ -4,7 +4,7 @@ Stack declared for the whole project: **Node.js + NestJS (TypeScript)**, Postgre
 
 ## 1. Problem summary (in our own words)
 
-PayLink is bill-payment and wallet backend for Egyptian customers and agents. A customer pays electricity, water, mobile top-up and internet bills from a wallet. PayLink adds a service fee, checks for fraud, holds the money, calls the biller, and only turns the hold into a final charge when the biller confirms. Billers speak different protocols (REST/JSON, SOAP-style XML, async callbacks, daily batch CSV), so each is hidden behind an adapter.
+PayLink is a bill-payment and wallet backend for Egyptian customers and agents. A customer pays electricity, water, mobile top-up and internet bills from a wallet. PayLink adds a service fee, checks for fraud, holds the money, calls the biller, and only turns the hold into a final charge when the biller confirms. Billers speak different protocols (REST/JSON, SOAP-style XML, async callbacks, daily batch CSV), so each is hidden behind an adapter.
 
 The hard part is not the happy path. It is staying correct with money when things fail: duplicate requests, slow billers, concurrent payments on one wallet, duplicate callbacks, SMS outages and nightly mismatches. The system must never double charge, never go negative, and never refund a payment whose biller outcome is unknown. Every money movement must be traceable through a ledger and an audit log.
 
