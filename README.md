@@ -30,4 +30,4 @@ Node.js 22, NestJS 10, TypeScript, PostgreSQL 16, Jest, ESLint, Docker Compose, 
 
 ## Team
 
-Add your team members and their roles  .
+Add your team members names and their roles  .
