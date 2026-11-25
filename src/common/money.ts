@@ -1,54 +1,74 @@
-import Decimal from 'decimal.js';
+name: PayLink CI
 
-/**
- * Represents an exact monetary amount in Egyptian Pounds (EGP).
- * Uses Decimal arithmetic to avoid floating-point precision errors.
- */
-export class Money {
-  // Create a private constructor to control Money object creation
-  private constructor(private readonly value: Decimal) {}
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
-  // Create a Money instance from an amount
-  static of(amount: string | number | Decimal): Money {
-    // Reject decimal numbers passed as JavaScript floats
-    if (typeof amount === 'number' && !Number.isInteger(amount)) {
-      throw new Error('Pass non-integer amounts as strings, not floats');
-    }
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
 
-    // Convert the amount to Decimal and round it to 2 decimal places
-    return new Money(new Decimal(amount).toDecimalPlaces(2, Decimal.ROUND_HALF_UP));
-  }
+    steps:
+      # Download the repository code
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-  // Create a Money instance from piasters (100 piasters = 1 EGP)
-  static fromPiasters(p: bigint | number | string): Money {
-    return new Money(new Decimal(p.toString()).div(100));
-  }
+      # Set up Node.js environment
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
 
-  // Add another Money amount to the current value
-  add(o: Money): Money {
-    return new Money(this.value.plus(o.value));
-  }
+      # Install project dependencies
+      - name: Install dependencies
+        run: npm ci
 
-  // Subtract another Money amount from the current value
-  subtract(o: Money): Money {
-    return new Money(this.value.minus(o.value));
-  }
+      # Build the NestJS application
+      - name: Build application
+        run: npm run build
 
-  // Calculate a percentage of the current amount
-  percent(pct: string): Money {
-    return Money.of(this.value.times(pct).div(100));
-  }
+      # Check code quality using ESLint
+      - name: Run lint
+        run: npm run lint
 
-  // Check whether the amount is negative
-  isNegative(): boolean {
-    return this.value.isNegative();
-  }
+      # Run tests and generate coverage reports
+      - name: Run tests with coverage
+        run: npm run test:cov
 
-  // Check whether the current amount is greater than another amount
-  greaterThan(o: Money): boolean {
-    return this.value.gt(o.value);
-  }
-}
+      # Generate coverage summary for GitHub Actions
+      - name: Generate Coverage Summary
+        if: always()
+        run: |
+          echo "### Coverage" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ -f coverage/coverage-summary.json ]; then
+            node <<'NODE'
+          const fs = require('fs');
+
+          const path = './coverage/coverage-summary.json';
+          const coverage = JSON.parse(fs.readFileSync(path, 'utf8'));
+          const total = coverage.total;
+
+          const summary = [
+            '| Metric | Covered | Total | Percentage |',
+            '|---|---:|---:|---:|',
+            ...['lines', 'statements', 'functions', 'branches'].map(key => {
+              const item = total[key];
+              return `| ${key} | ${item.covered} | ${item.total} | ${item.pct}% |`;
+            })
+          ].join('\n');
+
+          fs.appendFileSync(
+            process.env.GITHUB_STEP_SUMMARY,
+            summary + '\n'
+          );
+          NODE
+          else
+            echo "Coverage report was not generated. Check the test step." >> "$GITHUB_STEP_SUMMARY"
+          fi
   lessThan(o: Money): boolean { return this.value.lt(o.value); }
   equals(o: Money): boolean { return this.value.eq(o.value); }
   toPiasters(): bigint { return BigInt(this.value.times(100).toFixed(0)); }
