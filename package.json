@@ -1,8 +1,11 @@
 {
+  // Project information
   "name": "paylink",
   "version": "0.1.0",
   "description": "PayLink bill-payment and wallet backend",
   "private": true,
+
+  // Available commands to run the project
   "scripts": {
     "build": "nest build",
     "start": "node dist/main.js",
@@ -11,6 +14,8 @@
     "test": "jest",
     "test:cov": "jest --coverage"
   },
+
+  // Main packages required to run the application
   "dependencies": {
     "@nestjs/common": "^10.4.0",
     "@nestjs/core": "^10.4.0",
@@ -20,6 +25,8 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },
+
+  // Development and testing packages
   "devDependencies": {
     "@eslint/js": "^9.9.0",
     "@nestjs/cli": "^10.4.0",
@@ -36,6 +43,8 @@
     "typescript": "^5.5.0",
     "typescript-eslint": "^8.0.0"
   },
+
+  // Jest testing configuration
   "jest": {
     "moduleFileExtensions": ["js", "json", "ts"],
     "rootDir": ".",
