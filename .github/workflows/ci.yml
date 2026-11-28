@@ -1,4 +1,4 @@
-# CI workflow: runs automatically when code is pushed or a pull request is created
+# CI workflow: runs when code is pushed or a pull request is created
 name: CI
 
 on:
@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  # First job: install dependencies, check code, build, and run tests
+  # First job: install dependencies, build, and test the project
   build-test:
     runs-on: ubuntu-latest
     steps:
@@ -19,10 +19,10 @@ jobs:
           node-version: 22
           cache: npm
 
-      # Install all project dependencies
+      # Install project dependencies
       - run: npm ci
 
-      # Check code quality and errors
+      # Check code quality
       - name: Lint
         run: npm run lint
 
@@ -30,25 +30,30 @@ jobs:
       - name: Build
         run: npm run build
 
-      # Run tests and make sure line coverage is at least 70%
+      # Run tests and check that line coverage is at least 70%
       - name: Test with coverage (fails under 70% lines)
         run: npm run test:cov
 
-      # Display the test coverage results, even if a previous step fails
+      # Display coverage results without failing if the report is missing
       - name: Coverage summary
         if: always()
         run: |
           echo "### Coverage" >> "$GITHUB_STEP_SUMMARY"
-          node -e "const s=require('./coverage/coverage-summary.json').total;console.log('lines: '+s.lines.pct+'%  branches: '+s.branches.pct+'%')" >> "$GITHUB_STEP_SUMMARY"
 
-      # Save the coverage report as an artifact
+          if [ -f coverage/coverage-summary.json ]; then
+            node -e "const s=require('./coverage/coverage-summary.json').total;console.log('Lines: '+s.lines.pct+'%  Branches: '+s.branches.pct+'%')" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Coverage summary file was not generated." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # Save the coverage report
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: coverage
           path: coverage/
 
-  # Second job: build and test the application using Docker
+  # Second job: build and test the application with Docker
   docker:
     needs: build-test
     runs-on: ubuntu-latest
@@ -56,21 +61,28 @@ jobs:
       # Get the project code
       - uses: actions/checkout@v4
 
-      # Build the Docker image using the current commit SHA
+      # Build the Docker image
       - name: Build image
         run: docker build -t paylink:${{ github.sha }} .
 
-      # Start the containers and check if the application is healthy
+      # Start containers and check application health
       - name: Start stack and health check
         run: |
           docker compose up -d --build
+
           for i in $(seq 1 30); do
             if curl -sf http://localhost:3000/health | grep -q '"db":"up"'; then echo healthy; exit 0; fi
             sleep 3
           done
-          # Show logs if the health check fails
+
+          # Display logs if the health check fails
           docker compose logs
           exit 1
+
+      # Stop containers and remove volumes after the job
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
 
       # Stop containers and remove volumes after the job finishes
       - name: Tear down
