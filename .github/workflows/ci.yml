@@ -1,3 +1,4 @@
+# CI workflow: runs automatically when code is pushed or a pull request is created
 name: CI
 
 on:
@@ -5,39 +6,61 @@ on:
   pull_request:
 
 jobs:
+  # First job: install dependencies, check code, build, and run tests
   build-test:
     runs-on: ubuntu-latest
     steps:
+      # Get the project code
       - uses: actions/checkout@v4
+
+      # Set up Node.js 22 and enable npm caching
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+
+      # Install all project dependencies
       - run: npm ci
+
+      # Check code quality and errors
       - name: Lint
         run: npm run lint
+
+      # Build the application
       - name: Build
         run: npm run build
+
+      # Run tests and make sure line coverage is at least 70%
       - name: Test with coverage (fails under 70% lines)
         run: npm run test:cov
+
+      # Display the test coverage results, even if a previous step fails
       - name: Coverage summary
         if: always()
         run: |
           echo "### Coverage" >> "$GITHUB_STEP_SUMMARY"
           node -e "const s=require('./coverage/coverage-summary.json').total;console.log('lines: '+s.lines.pct+'%  branches: '+s.branches.pct+'%')" >> "$GITHUB_STEP_SUMMARY"
+
+      # Save the coverage report as an artifact
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: coverage
           path: coverage/
 
+  # Second job: build and test the application using Docker
   docker:
     needs: build-test
     runs-on: ubuntu-latest
     steps:
+      # Get the project code
       - uses: actions/checkout@v4
+
+      # Build the Docker image using the current commit SHA
       - name: Build image
         run: docker build -t paylink:${{ github.sha }} .
+
+      # Start the containers and check if the application is healthy
       - name: Start stack and health check
         run: |
           docker compose up -d --build
@@ -45,8 +68,11 @@ jobs:
             if curl -sf http://localhost:3000/health | grep -q '"db":"up"'; then echo healthy; exit 0; fi
             sleep 3
           done
+          # Show logs if the health check fails
           docker compose logs
           exit 1
+
+      # Stop containers and remove volumes after the job finishes
       - name: Tear down
         if: always()
         run: docker compose down -v
