@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  # First job: install dependencies, build, and test the project
+  # First job: install dependencies, check code, build, and test
   build-test:
     runs-on: ubuntu-latest
     steps:
@@ -22,7 +22,7 @@ jobs:
       # Install project dependencies
       - run: npm ci
 
-      # Check code quality
+      # Check code quality and TypeScript syntax
       - name: Lint
         run: npm run lint
 
@@ -30,8 +30,8 @@ jobs:
       - name: Build
         run: npm run build
 
-      # Run tests and check that line coverage is at least 70%
-      - name: Test with coverage (fails under 70% lines)
+      # Run tests and check the 70% line coverage requirement
+      - name: Test with coverage
         run: npm run test:cov
 
       # Display coverage results without failing if the report is missing
@@ -53,7 +53,7 @@ jobs:
           name: coverage
           path: coverage/
 
-  # Second job: build and test the application with Docker
+  # Second job: build and test the application using Docker
   docker:
     needs: build-test
     runs-on: ubuntu-latest
